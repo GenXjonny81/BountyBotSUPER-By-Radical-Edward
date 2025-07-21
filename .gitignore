@@ -1,0 +1,6 @@
+bountybot_config.json
+*.key
+*.secret
+__pycache__/
+*.pyc
+.env

@@ -29,7 +29,7 @@ It leverages buy and sell grids to automate market making or spot trading — an
 
 ### 2. Run the Setup Wizard
 
-Radical Ed helps you configure your market, grid, API keys, and more:
+In setup_bountybot.py Radical Ed helps you configure your market, grid, API keys, and more:
 
 - **NEVER use real API keys for testing, and never commit `bountybot_config.json` or `.key` files to Github!**
 
@@ -43,7 +43,7 @@ Spike, Ed, and Jet will take it from there—with Bebop-style logs and grid acti
 
 `setup_bountybot.py` helps you generate a safe config file.  
 **Config example (`bountybot_config.json`):**
-**{
+{
 "bot_ticker": "XTM-USDT",
 "bot_balance": 2000,
 "grid_count": 10,
@@ -55,7 +55,7 @@ Spike, Ed, and Jet will take it from there—with Bebop-style logs and grid acti
 "pulse_echo": 5,
 "api_key_file": "/home/you/bountybot.key",
 ... other grid/wizard params
-}**
+}
 > *Tip: Always keep API files, keys, and configs out of your repo and in your `.gitignore`.*
 
 ---

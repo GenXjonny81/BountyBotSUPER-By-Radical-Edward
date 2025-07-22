@@ -7,6 +7,8 @@ Radical Edward–flavored config wizard for BountyBot — your grid trading part
 import os
 import json
 from getpass import getpass
+import requests
+import sys
 
 CONFIG_PATH = "bountybot_config.json"
 
@@ -27,32 +29,94 @@ def ask(prompt, default=None, is_float=False, is_int=False, required=True):
         except ValueError:
             print("  Heehee! That's not a number, try again!")
 
+import sys
+
 def api_key_setup_ed():
     print("\n--- API Key Setup! Ed loves secrets! ---")
     dest = ask("Where should Ed hide your super secret key file? (Be sneaky!)", default=os.path.expanduser("~/bountybot.key"))
     if os.path.exists(dest):
         print(f"  Oh! Ed found a key at {dest}. Let’s check if it’s good—and not from the bad guys!")
         with open(dest, "r") as f:
-            lines = f.read().strip().splitlines()
-            if len(lines) >= 2 and all(lines):
+            lines = [line.strip() for line in f.read().strip().splitlines()]
+            if len(lines) == 2 and all(len(line) == 32 for line in lines):
                 print("  Secrets are safe and sound. Hurray for Ed security!")
                 return dest
             else:
-                print("  Whoopsy! That key file is incomplete. Time to make it shiny and new.")
-    print("\nOkie-dokie! Paste your TradeOgre API key and secret below. Ed promises not to share (or eat them)!")
-    api_key = getpass("API Key (Ed can’t see your typing!): ")
-    api_secret = getpass("API Secret (ssshhh!): ")
-    with open(dest, "w") as f:
-        f.write(api_key.strip() + "\n" + api_secret.strip() + "\n")
-    print(f"  Zoom! API key is hidden at {dest}. Like magic Ed trick!")
-    try:
-        os.chmod(dest, 0o600)
-    except Exception:
-        pass
+                print("  Whoopsy! That key file is incomplete or misformatted. Time to make it shiny and new.")
+
+    def is_valid_key(s):
+        return len(s) == 32
+    while True:
+        try:
+            print("\nOkie-dokie! Paste your TradeOgre API key and secret below. Ed promises not to share (or eat them)!")
+            api_key = getpass("API Key (Ed can’t see your typing!): ").strip()
+            api_secret = getpass("API Secret (ssshhh!): ").strip()
+            if not (is_valid_key(api_key) and is_valid_key(api_secret)):
+                print("Whoa! Ed says: API keys must be exactly 32 characters. Jack back in and try again, cowboy.")
+                continue
+            # Optional: place your verify_api_keys check here
+            # if not verify_api_keys(api_key, api_secret):
+            #     print("Beep-beep! The matrix says your keys are phony—no bounties, no access! Ed says: paste the real deal, chummer!")
+            #     continue
+            with open(dest, "w") as f:
+                f.write(api_key + "\n" + api_secret + "\n")
+            print(f"  Zoom! API key is hidden at {dest}. Like a magic Ed trick!")
+            try:
+                os.chmod(dest, 0o600)
+            except Exception:
+                pass
+            break
+        except KeyboardInterrupt:
+            print("\n\nRadical Ed caught your Ctrl+C! Exiting the setup—no secrets stolen. See you in cyberspace, cowboy! 👋")
+            sys.exit(0)
     return dest
 
+def verify_api_keys(api_key, api_secret):
+    # Example for TradeOgre-like API.
+    try:
+        # API endpoint for self-verification (adjust to your exchange's docs)
+        url = "https://tradeogre.com/api/v1/account/balance"
+        headers = {"API-KEY": api_key, "API-SECRET": api_secret}
+        response = requests.get(url, headers=headers, timeout=5)
+        if response.status_code == 200:
+            return True
+        else:
+            print(f"Key verification :( failed :( OhNo! error code: {response.text}")
+            return False
+    except Exception as e:
+        print(f"Error during key verification: {e}")
+        return False
+
+
 def main():
-    print("\n=== Ed's Super BountyBot Setup Wizard! ===")
+    ascii_art = '''
+                 ,  xp  u  _                  _  j- _p  _
+      _  `N_  *p `b_ b `L q          _ j _@ jF jF _p" _y^
+      "*s_ "*, "h_ 9_ 0_"p k &     ,jFjF @ j"_p"_p" _p"  _*"
+    *u_  "*,_ 9u_"q_"b_0_Np9p0 b  jLd 0 0 J"jP j@ _M" _m@" __*
+  __  "9m__ "*_ 9u_"u_0_9_9_0JL0 fd Fj'd d p"j* a*"_w@" _w*"  __ 
+   "^m,_  "*u_"9u_"q_9W"M"p0Jk0]NF0jNFgL@jP_#"w@_a*"__*^" __w*""
+  u__  ""*w__"9u_"*u_N_*C4@N0NNNNN##0ZQRpCpCpF_*"_w*" _a*^"  ___
+    ""**u___"^m,_"*s"NCNCNDWNNNNNNNNNNEAZEMEm@Lw^__w*""__aw*^""
+   *ua___ ""**w__"*wE@6PN@0N###########NNW0Z*EL*^"_am*"" ____am
+       """^**wa_IF^*6Z@pNN##############NBDMEZ**""_gw**^"""
+      ^^*r*mwwaj_EEZ@qNBN################NNWp49ZEELaam**r**^
+         aaaaaaaaZZZZZ##N#################N#EZZZZLaaaaaas
+            _aam**r**NNNN################N#EDM*r*mwwag,
+              amr*^ZZWMQ#N###############NNMpEZ5^**ua
+               -*"EZ*MN@NNBN###########N@ZNEZ*6E"*r
+                 "jw*TbN@NN#NN######NNNBWNZNEP*2""
+                   -@j*Cp5AWNNNNNNNNNbA@NNC*CP-
+                     "w"g"djF0dNNF#0NF#NC4Ch
+                       ` @jFjN@JNF0JL0`L"p"
+                          @jFj^0 Ft 0 L`
+                           ` # # FJF]r"
+                               F F #
+                                 F                  Welcome Cowboy!!!
+                                 
+     '''
+    print(ascii_art)
+    print("\n=== Ed's BountyBotSUPER Setup Wizard! ===")
     print("Heehee! BountyBot wants to know all your secrets, just like Ed! Let's get weird and code with style!\n")
 
     config = {}
@@ -61,7 +125,7 @@ def main():
         default="BTC-XMR"
     )
     config['bot_balance'] = ask(
-        "How many shinies are you trading? (Like XMRs! Give Ed a number, pleeeease!)",
+        "How many fake internet monies are you trading? (Like XMRs! Give Ed a number, pleeeease!)",
         is_float=True,
         default="1"
     )
@@ -85,7 +149,7 @@ def main():
         )
     if grid_mode in [2, 3]:
         config['base_allocation'] = ask(
-            "How much of your base asset (like XTM or SOL) does Ed get to play with for the sell grid?",
+            "How much of your fake internet coins (like XTM or SOL) does Ed get to play with for the sell grid?",
             is_float=True,
             default="10"
         )
@@ -161,4 +225,9 @@ def main():
     )
 
 if __name__ == "__main__":
-    main()
+    import sys
+    try:
+        main()
+    except KeyboardInterrupt:
+        print("\n\nEd saw your hand on the kill-switch! Setup aborted. The matrix will wait for you, cowboy.\n")
+        sys.exit(0)

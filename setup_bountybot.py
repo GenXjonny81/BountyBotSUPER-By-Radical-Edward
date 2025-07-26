@@ -29,13 +29,29 @@ def ask(prompt, default=None, is_float=False, is_int=False, required=True):
         except ValueError:
             print("  Heehee! That's not a number, try again!")
 
+def has_rw_permission(path):
+    parent = os.path.dirname(os.path.abspath(path)) or "."
+    can_write = os.access(parent, os.W_OK)
+    if os.path.exists(path):
+        can_write = can_write and os.access(path, os.W_OK)
+    can_read = os.access(path, os.R_OK) if os.path.exists(path) else True
+    return can_read and can_write
+
+if not has_rw_permission(CONFIG_PATH):
+    print(f"\nEd Error! You can't r/w {CONFIG_PATH}. Try: sudo chown $USER {CONFIG_PATH} && chmod u+rw {CONFIG_PATH}")
+    sys.exit(2)
+
 import sys
+def has_write_permission(path):
+    parent = os.path.dirname(os.path.abspath(path)) or "."
+    return os.access(parent, os.W_OK)
 
 def api_key_setup_ed():
     print("\n--- API Key Setup! Ed loves secrets! ---")
     dest = ask("Where should Ed hide your super secret key file? (Be sneaky!)", default=os.path.expanduser("~/bountybot.key"))
     if os.path.exists(dest):
         print(f"  Oh! Ed found a key at {dest}. Let’s check if it’s good—and not from the bad guys!")
+
         with open(dest, "r") as f:
             lines = [line.strip() for line in f.read().strip().splitlines()]
             if len(lines) == 2 and all(len(line) == 32 for line in lines):
@@ -54,6 +70,13 @@ def api_key_setup_ed():
             if not (is_valid_key(api_key) and is_valid_key(api_secret)):
                 print("Whoa! Ed says: API keys must be exactly 32 characters. Jack back in and try again, cowboy.")
                 continue
+            if not has_write_permission(dest):
+                print(f"\nEd's ICE triggers: Can't write your API key file at {dest}.\n"
+                      f"Try running with correct permissions, or pick a new location.\n"
+                      f"Hint: sudo chown $USER '{dest}' && chmod u+rw '{dest}'")
+                sys.exit(2)
+            with open(dest, "w") as f:
+                f.write(api_key + "\n" + api_secret + "\n")
             # Optional: place your verify_api_keys check here
             # if not verify_api_keys(api_key, api_secret):
             #     print("Beep-beep! The matrix says your keys are phony—no bounties, no access! Ed says: paste the real deal, chummer!")
@@ -89,6 +112,30 @@ def verify_api_keys(api_key, api_secret):
 
 
 def main():
+    ascii_bot = r'''                                  _____
+                                 |     |
+                                |<= - =>|
+                                 |_\=/_|   Let's Go Cowboy! 
+                           ____ ___|_|___ ____
+                          ()___)BountyBot()___)
+                          // /|   Super   |\ \\
+                         // / |    MEGA   | \ \\
+                        (___) |___________| (___)
+                        (___)   (_______)   (___)
+                        (___)     (___)     (___)
+                        (___)      |_|      (___)
+                        (___)  ___/___\___   | |
+                         | |  |           |  | |
+                         | |  |___________| /___\
+                        /___\  |||     ||| //   \\
+                       //   \\ |||     ||| \\   //
+                       \\   // |||     |||  \\ //
+                        \\ // ()__)   (__()
+                              ///       \\\
+                             ///         \\\
+                           _///___     ___\\\_
+                          |_______|   |_______|'''
+
     ascii_art = '''
                  ,  xp  u  _                  _  j- _p  _
       _  `N_  *p `b_ b `L q          _ j _@ jF jF _p" _y^
@@ -112,11 +159,11 @@ def main():
                           @jFj^0 Ft 0 L`
                            ` # # FJF]r"
                                F F #
-                                 F                  Welcome Cowboy!!!
+                                 F                 
                                  
      '''
-    print(ascii_art)
-    print("\n=== Ed's BountyBotSUPER Setup Wizard! ===")
+    print(ascii_bot)
+    print("\n=== Ed's BountyBotSuperMEGA Setup Wizard! ===")
     print("Heehee! BountyBot wants to know all your secrets, just like Ed! Let's get weird and code with style!\n")
 
     config = {}
@@ -201,6 +248,10 @@ def main():
     try:
         lower = float(config['min_price'])  # For a basic grid; you can later improve to use actual min price if you fetch it
         upper = float(config['max_price'])
+        if lower > upper:
+            print(
+                f"\n⚠️ Ed Error! min_price ({lower}) must be less than or equal to max_price ({upper}). ICE triggered, setup aborted.")
+            sys.exit(1)
         grid_count = int(config['grid_count'])
         config['grid_spacing'] = (upper - lower) / (grid_count - 1) if grid_count > 1 else 0
         print(f"\nZing! Ed calculated a grid spacing of {config['grid_spacing']} for your bounties!")
@@ -209,17 +260,20 @@ def main():
         print(f"\nOops, Ed couldn’t calculate grid_spacing, set to 0. Please check your config! [{ex}]")
 
     config['api_key_file'] = api_key_setup_ed()
-
+    if not has_rw_permission(CONFIG_PATH):
+        print(
+            f"\nEd Error! You can't r/w {CONFIG_PATH}. Try: sudo chown $USER {CONFIG_PATH} && chmod u+rw {CONFIG_PATH}")
+        sys.exit(2)
     with open(CONFIG_PATH, "w") as f:
         json.dump(config, f, indent=4)
-
+    print(ascii_art)
     print(
         f"\nWoohoo! BountyBot is now totally set and super-funky!\nConfig file is waiting at: {CONFIG_PATH}\nEd will stick around for more fun! 🤖🍝")
     print(
         "\n[Ed does a somersault on your screen!]\n"
         "All done! Now Ed says: time to keep going, space cowboy!\n"
         "Open your terminal and run:\n\n"
-        "    python run.py\n\n"
+        "    python Run.py\n\n"
         "and BountyBot will start chasing bounties in cyberspace!\n"
         "Wheeee! Ed will watch you from the net! ^_^"
     )
@@ -229,5 +283,5 @@ if __name__ == "__main__":
     try:
         main()
     except KeyboardInterrupt:
-        print("\n\nEd saw your hand on the kill-switch! Setup aborted. The matrix will wait for you, cowboy.\n")
+        print("\n\nEd saw your hand on the kill-switch! Setup aborted. The matrix will wait for you, cowboy. Start again by typing python setup_bountybot.py\n")
         sys.exit(0)

@@ -23,10 +23,10 @@ It leverages buy and sell grids to automate market making or spot trading — an
 ## 🛠️ Setup & Usage
 
 ### 1. Clone the Repo
-
+'''
   git clone https://github.com/GenXjonny81/BountyBotSUPER-By-Radical-Edward.git
   cd BountyBotSuper
-
+'''
 ### 2. Run the Setup Wizard
 
 In setup_bountybot.py Radical Ed helps you configure your market, grid, API keys, and more:
